@@ -4,13 +4,28 @@
   <meta charset="UTF-8">
   <title>시간 코드 정렬 변환기</title>
   <style>
-    * { box-sizing: border-box; margin: 0; padding: 0; }
+    /* 1. 한컴산뜻돋움 웹폰트 불러오기 (PC에 폰트가 설치되어 있지 않아도 적용) */
+    @font-face {
+      font-family: 'HancomSanTtutDotum';
+      src: url('https://fastly.jsdelivr.net/gh/projectnoonnu/noonfonts_seven@1.0/HancomSanTtutDotum.woff') format('woff');
+      font-weight: normal;
+      font-style: normal;
+    }
+
+    /* 2. 전역 스타일 및 기본 폰트 고정 */
+    * { 
+      box-sizing: border-box; 
+      margin: 0; 
+      padding: 0; 
+    }
+    
     body {
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      font-family: 'HancomSanTtutDotum', '한컴산뜻돋움', 'Malgun Gothic', sans-serif;
       padding: 24px;
       background-color: #f3f4f6;
       color: #1f2937;
     }
+
     .header {
       margin-bottom: 20px;
     }
@@ -19,26 +34,42 @@
       font-weight: 700;
       margin-bottom: 8px;
     }
+
     .controls {
       display: flex;
       gap: 12px;
       align-items: center;
       margin-bottom: 16px;
       flex-wrap: wrap;
+      background: #ffffff;
+      padding: 12px 16px;
+      border-radius: 8px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.06);
     }
     .controls label {
       font-size: 14px;
       display: flex;
       align-items: center;
       gap: 6px;
+      font-weight: 500;
     }
-    .controls input[type="number"] {
-      width: 60px;
+    .controls input[type="number"], .controls select {
       padding: 6px 8px;
       border: 1px solid #d1d5db;
       border-radius: 6px;
-      font-size: 14px;
+      font-size: 13px;
+      font-family: inherit;
     }
+    .controls input[type="number"] {
+      width: 60px;
+    }
+    
+    .button-group {
+      display: flex;
+      gap: 8px;
+      margin-left: auto;
+    }
+
     button {
       padding: 8px 16px;
       font-size: 14px;
@@ -46,6 +77,7 @@
       border: none;
       border-radius: 6px;
       cursor: pointer;
+      font-family: inherit;
       transition: background-color 0.15s ease;
     }
     .btn-primary {
@@ -68,7 +100,7 @@
       display: grid;
       grid-template-columns: 1fr 1fr;
       gap: 20px;
-      height: calc(100vh - 170px);
+      height: calc(100vh - 180px);
       min-height: 500px;
     }
     .editor-box {
@@ -90,9 +122,9 @@
       border: 1px solid #e5e7eb;
       border-radius: 6px;
       padding: 12px;
-      font-family: monospace;
-      font-size: 13px;
-      line-height: 1.5;
+      font-family: 'HancomSanTtutDotum', '한컴산뜻돋움', sans-serif;
+      font-size: 14px;
+      line-height: 1.6;
       resize: none;
       white-space: pre;
     }
@@ -109,11 +141,35 @@
   </div>
 
   <div class="controls">
-    <label>당길 줄 수: <input type="number" id="shiftCount" value="2" min="1"></label>
-    <label>마지막 추가 초: <input type="number" id="extraSeconds" value="7" min="0" step="0.1">초</label>
-    <button class="btn-primary" onclick="convert()">변환하기</button>
-    <button class="btn-copy" onclick="copyResult()">결과 복사하기</button>
-    <button class="btn-clear" onclick="clearAll()">내용 비우기</button>
+    <!-- 폰트 선택 컨트롤 -->
+    <label>폰트 설정:
+      <select id="fontSelect" onchange="changeFont(this.value)">
+        <option value="'HancomSanTtutDotum', '한컴산뜻돋움', sans-serif" selected>한컴산뜻돋움 (기본)</option>
+        <option value="'Pretendard', sans-serif">프리텐다드 (Pretendard)</option>
+        <option value="'Nanum Gothic', sans-serif">나눔고딕</option>
+        <option value="'Malgun Gothic', sans-serif">맑은 고딕</option>
+        <option value="'Courier New', monospace">고정폭 영문 (Monospace)</option>
+        <option value="custom">직접 입력...</option>
+      </select>
+    </label>
+
+    <label>글자 크기:
+      <select id="fontSizeSelect" onchange="changeFontSize(this.value)">
+        <option value="12px">12px</option>
+        <option value="14px" selected>14px</option>
+        <option value="16px">16px</option>
+        <option value="18px">18px</option>
+      </select>
+    </label>
+
+    <label style="margin-left: 8px;">당길 줄: <input type="number" id="shiftCount" value="2" min="1"></label>
+    <label>추가 초: <input type="number" id="extraSeconds" value="7" min="0" step="0.1">초</label>
+
+    <div class="button-group">
+      <button class="btn-primary" onclick="convert()">변환하기</button>
+      <button class="btn-copy" onclick="copyResult()">결과 복사하기</button>
+      <button class="btn-clear" onclick="clearAll()">내용 비우기</button>
+    </div>
   </div>
 
   <div class="container">
@@ -128,6 +184,28 @@
   </div>
 
   <script>
+    // 폰트 변경 함수
+    function changeFont(fontValue) {
+      if (fontValue === 'custom') {
+        const customFont = prompt('사용할 폰트 이름을 입력하세요 (예: 돋움, 바탕, D2Coding):');
+        if (customFont) {
+          document.body.style.fontFamily = `'${customFont}', sans-serif`;
+          document.getElementById('inputText').style.fontFamily = `'${customFont}', sans-serif`;
+          document.getElementById('outputText').style.fontFamily = `'${customFont}', sans-serif`;
+        }
+        return;
+      }
+      document.body.style.fontFamily = fontValue;
+      document.getElementById('inputText').style.fontFamily = fontValue;
+      document.getElementById('outputText').style.fontFamily = fontValue;
+    }
+
+    // 글자 크기 변경 함수
+    function changeFontSize(sizeValue) {
+      document.getElementById('inputText').style.fontSize = sizeValue;
+      document.getElementById('outputText').style.fontSize = sizeValue;
+    }
+
     function addSeconds(timeTag, seconds) {
       const match = timeTag.match(/\[(\d{2}):(\d{2}\.\d{2})\]/);
       if (!match) return timeTag;
@@ -153,7 +231,6 @@
       const shiftLines = parseInt(document.getElementById('shiftCount').value, 10) || 2;
       const extraSec = parseFloat(document.getElementById('extraSeconds').value) || 7.0;
 
-      // 1. <br> 태그와 일반 줄바꿈을 모두 줄 단위로 분리
       const normalized = input.replace(/<br\s*\/?>/gi, '\n');
       const rawLines = normalized.split('\n').map(l => l.trim()).filter(l => l.length > 0);
 
@@ -161,7 +238,6 @@
       const texts = [];
       const timecodeRegex = /^(\[\d{2}:\d{2}\.\d{2}\])(.*)$/;
 
-      // 2. 시간 코드와 텍스트 분리
       for (const line of rawLines) {
         const match = line.match(timecodeRegex);
         if (match) {
@@ -173,10 +249,8 @@
         }
       }
 
-      // 3. 시간 코드 지정 줄 수만큼 앞으로 당김
       let shiftedTimes = times.slice(shiftLines);
 
-      // 4. 모자란 마지막 행들을 채우기 (마지막 유효 시간 코드 + 지정 초)
       const validTimes = shiftedTimes.filter(t => t !== '');
       let fillTime = '';
       if (validTimes.length > 0) {
@@ -187,7 +261,6 @@
         shiftedTimes.push(fillTime);
       }
 
-      // 5. 결합 (빈 줄 없이 1:1 매칭)
       const resultLines = texts.map((txt, idx) => `${shiftedTimes[idx]}${txt}`);
       document.getElementById('outputText').value = resultLines.join('\n');
     }
